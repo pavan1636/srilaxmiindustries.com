@@ -100,7 +100,7 @@ app.post('/send-quotation', async (req, res) => {
 
     // Email to Owner
     await resend.emails.send({
-      from: 'Sri Laxmi Industries <onboarding@resend.dev>',
+      from: 'Sri Laxmi Industries <info@srilaxmiindustries.com>',
       to: process.env.RECEIVER_EMAIL,
       subject: `New Quotation Request — ${product} from ${name}`,
       html: ownerHTML
@@ -110,7 +110,7 @@ app.post('/send-quotation', async (req, res) => {
 
     // Email to Customer
     await resend.emails.send({
-      from: 'Sri Laxmi Industries <onboarding@resend.dev>',
+      from: 'Sri Laxmi Industries <info@srilaxmiindustries.com>',
       to: email,
       subject: 'We received your quotation request — Sri Laxmi Industries',
       html: customerHTML
