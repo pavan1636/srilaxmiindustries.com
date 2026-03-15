@@ -58,7 +58,7 @@ async function submitForm(e) {
   };
 
   try {
-    const response = await fetch('https://srilaxmi-backend.onrender.com/send-quotation', {
+    const response = await fetch('https://srilaxmi-project.onrender.com/send-quotation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
