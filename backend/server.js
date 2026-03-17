@@ -104,6 +104,7 @@ app.post('/send-quotation', async (req, res) => {
       to: process.env.RECEIVER_EMAIL,
       subject: `New Quotation Request — ${product} from ${name}`,
       html: ownerHTML
+      reply_to: email
     });
 
     console.log('Owner email sent');
