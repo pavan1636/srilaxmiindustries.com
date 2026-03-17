@@ -103,7 +103,7 @@ app.post('/send-quotation', async (req, res) => {
       from: 'Sri Laxmi Industries <info@srilaxmiindustries.com>',
       to: process.env.RECEIVER_EMAIL,
       subject: `New Quotation Request — ${product} from ${name}`,
-      html: ownerHTML
+      html: ownerHTML,
       reply_to: email
     });
 
