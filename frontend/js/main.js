@@ -47,21 +47,25 @@ async function submitForm(e) {
   btn.innerHTML = '<span>Sending...</span>';
   btn.disabled = true;
 
-  const data = {
-    name:           document.querySelector('input[placeholder="John Smith"]').value,
-    company:        document.querySelector('input[placeholder="ACME Engineering Ltd."]').value,
-    email:          document.querySelector('input[type="email"]').value,
-    phone:          document.querySelector('input[type="tel"]').value,
-    country:        document.querySelectorAll('select')[0].value,
-    product:        document.querySelectorAll('select')[1].value,
-    specifications: document.querySelector('textarea').value
-  };
+  const fileInput = document.querySelector('input[type="file"]');
+  const formData = new FormData();
+
+  formData.append('name', document.querySelector('input[placeholder="John Smith"]').value);
+  formData.append('company', document.querySelector('input[placeholder="ACME Engineering Ltd."]').value);
+  formData.append('email', document.querySelector('input[type="email"]').value);
+  formData.append('phone', document.querySelector('input[type="tel"]').value);
+  formData.append('country', document.querySelectorAll('select')[0].value);
+  formData.append('product', document.querySelectorAll('select')[1].value);
+  formData.append('specifications', document.querySelector('textarea').value);
+
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    formData.append('drawing', fileInput.files[0]);
+  }
 
   try {
-    const response = await fetch('https://srilaxmi-project.onrender.com/send-quotation', {
+    const response = await fetch('/api/enquiries', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: formData
     });
 
     const result = await response.json();
@@ -75,7 +79,7 @@ async function submitForm(e) {
   } catch (error) {
     btn.innerHTML = '<span>Send Quotation Request</span><span>→</span>';
     btn.disabled = false;
-    alert('Something went wrong. Please email us directly.');
+    alert(error.message || 'Something went wrong. Please email us directly.');
     console.error(error);
   }
 }

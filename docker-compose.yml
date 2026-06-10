@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: srilaxmi-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-srilaxmi}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_DATABASE:-srilaxmi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend Express API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: srilaxmi-backend
+    restart: always
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-srilaxmi}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-srilaxmi_admin_secret_key}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      S3_UPLOAD_BUCKET: ${S3_UPLOAD_BUCKET}
+      SES_FROM_EMAIL: ${SES_FROM_EMAIL}
+      SES_TO_EMAIL: ${SES_TO_EMAIL}
+      DD_AGENT_HOST: datadog-agent
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/usr/src/app/uploads
+
+  # Frontend Nginx Web Server / Reverse Proxy
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: srilaxmi-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  # Datadog Agent Container (Telemetry & Metrics)
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: srilaxmi-datadog
+    restart: always
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE=name:srilaxmi-datadog
+    # Note: socket mounts allow Datadog to pull stats directly from the Docker daemon.
+    # On Windows, this works inside WSL2 / Docker Desktop.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local

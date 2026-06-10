@@ -1,0 +1,16 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_build/
+
+# Local configuration files
+.env
+.env.local
+.env.*.local
+
+# Local file upload fallbacks
+backend/uploads/
+
+# OS metadata files
+.DS_Store
+Thumbs.db

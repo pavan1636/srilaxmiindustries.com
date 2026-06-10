@@ -1,141 +1,229 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Resend } = require('resend');
+const path = require('path');
+const { initDb, pool } = require('./db');
+const { upload, uploadFile } = require('./upload');
+const { sendEnquiryEmail } = require('./mailer');
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Serve static uploads locally (for local S3 upload fallbacks)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/', (req, res) => {
-  res.send('Sri Laxmi Industries - Server is running ✅');
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    // Check PostgreSQL connection
+    await pool.query('SELECT 1');
+    res.status(200).json({
+      status: 'UP',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'connected',
+        server: 'healthy'
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'DOWN',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'error: ' + error.message,
+        server: 'healthy'
+      }
+    });
+  }
 });
 
-app.post('/send-quotation', async (req, res) => {
-  const { name, company, email, phone, country, product, specifications } = req.body;
+// Root welcome route
+app.get('/', (req, res) => {
+  res.send('Sri Laxmi Engineering Works B2B Platform API is running ✅');
+});
 
-  const ownerHTML = `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background:#0a0f1e;padding:24px;text-align:center;">
-      <h1 style="color:#e8a020;margin:0;font-size:1.4rem;">SRI LAXMI INDUSTRIES</h1>
-      <p style="color:#8fa3b8;margin:4px 0 0;font-size:0.8rem;">NEW QUOTATION REQUEST</p>
-    </div>
+// Helper for validating email format
+const validateEmail = (email) => {
+  return String(email)
+    .toLowerCase()
+    .match(
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+};
 
-    <div style="background:#f9f9f9;padding:32px;">
-      <table style="width:100%;border-collapse:collapse;">
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;width:40%;">Full Name</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;font-weight:bold;">${name}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;">Company</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;">${company || 'Not provided'}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;">Email</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;">${email}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;">Phone</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;">${phone || 'Not provided'}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;">Country</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;">${country}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;">Product</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;"><strong style="color:#e8a020;">${product}</strong></td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:#666;vertical-align:top;">Specifications</td>
-          <td style="padding:10px 0;">${specifications || 'Not provided'}</td>
-        </tr>
-      </table>
-    </div>
+// Admin authentication middleware for GDPR endpoints
+function adminAuth(req, res, next) {
+  const adminApiKey = process.env.ADMIN_API_KEY;
+  if (!adminApiKey) {
+    return res.status(500).json({ error: 'Server configuration error: ADMIN_API_KEY is not configured.' });
+  }
+  const providedKey = req.headers['x-admin-api-key'] || req.query.admin_api_key;
+  if (!providedKey || providedKey !== adminApiKey) {
+    return res.status(401).json({ error: 'Unauthorized. Valid X-Admin-API-Key header is required.' });
+  }
+  next();
+}
 
-    <div style="background:#0a0f1e;padding:16px;text-align:center;">
-      <p style="color:#8fa3b8;margin:0;font-size:0.75rem;">Sri Laxmi Industries — Precision Engineering</p>
-    </div>
-  </div>
-  `;
+// ----------------------------------------------------
+// Core B2B Enquiry Submission Endpoint
+// ----------------------------------------------------
+app.post('/api/enquiries', upload.single('drawing'), async (req, res) => {
+  const {
+    name, // from body (can be contact_name)
+    company, // from body (can be company_name)
+    email,
+    phone,
+    country,
+    product, // from body (can be product_interest)
+    specifications, // from body (can be message)
+    currency
+  } = req.body;
 
-  const customerHTML = `
-  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-    <div style="background:#0a0f1e;padding:24px;text-align:center;">
-      <h1 style="color:#e8a020;margin:0;">SRI LAXMI INDUSTRIES</h1>
-      <p style="color:#8fa3b8;font-size:0.8rem;">PRECISION ENGINEERING · INDIA</p>
-    </div>
+  // Map incoming body variables (handling both new format and old website format compatibility)
+  const contactName = name || req.body.contact_name;
+  const companyName = company || req.body.company_name;
+  const productInterest = product || req.body.product_interest;
+  const message = specifications || req.body.message;
+  const preferredCurrency = currency || 'EUR';
 
-    <div style="background:#f9f9f9;padding:32px;">
-      <h2>Thank you, ${name}!</h2>
-
-      <p>
-        We received your quotation request for
-        <strong>${product}</strong>.
-        Our team will contact you within 24 hours.
-      </p>
-
-      <p>
-        If you have urgent questions please reply to this email.
-      </p>
-
-      <p>
-        Best regards<br>
-        <strong>Sri Laxmi Industries Team</strong>
-      </p>
-    </div>
-
-    <div style="background:#0a0f1e;padding:16px;text-align:center;">
-      <p style="color:#8fa3b8;margin:0;font-size:0.75rem;">
-        Sri Laxmi Industries · Precision Engineering · India
-      </p>
-    </div>
-  </div>
-  `;
-
-  try {
-
-    // Email to Owner
-    await resend.emails.send({
-      from: 'Sri Laxmi Industries <info@srilaxmiindustries.com>',
-      to: process.env.RECEIVER_EMAIL,
-      subject: `New Quotation Request — ${product} from ${name}`,
-      html: ownerHTML,
-      reply_to: email
-    });
-
-    console.log('Owner email sent');
-
-    // Email to Customer
-    await resend.emails.send({
-      from: 'Sri Laxmi Industries <info@srilaxmiindustries.com>',
-      to: email,
-      subject: 'We received your quotation request — Sri Laxmi Industries',
-      html: customerHTML
-    });
-
-    console.log('Customer confirmation email sent');
-
-    res.status(200).json({ success: true, message: 'Emails sent successfully' });
-
-  } catch (error) {
-
-    console.error('Email error:', error.message);
-
-    res.status(500).json({
+  // Input Validation
+  if (!contactName || !email || !country || !productInterest) {
+    return res.status(400).json({
       success: false,
-      message: error.message
+      message: 'Validation failed. Required fields are missing (name/contact_name, email, country, product/product_interest).'
     });
-
   }
 
+  if (!validateEmail(email)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed. Invalid email format.'
+    });
+  }
+
+  try {
+    let uploadedFileUrl = null;
+    if (req.file) {
+      console.log(`Uploading file: ${req.file.originalname} (${req.file.size} bytes)...`);
+      uploadedFileUrl = await uploadFile(req.file);
+      console.log(`File uploaded successfully. URL: ${uploadedFileUrl}`);
+    }
+
+    // Insert into PostgreSQL database
+    const insertQuery = `
+      INSERT INTO enquiries (company_name, contact_name, email, phone, country, product_interest, currency, message, uploaded_file_url, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'New')
+      RETURNING *
+    `;
+    const values = [
+      companyName || null,
+      contactName,
+      email,
+      phone || null,
+      country,
+      productInterest,
+      preferredCurrency,
+      message || null,
+      uploadedFileUrl,
+    ];
+
+    const result = await pool.query(insertQuery, values);
+    const savedEnquiry = result.rows[0];
+    console.log(`Enquiry saved to DB with ID: ${savedEnquiry.id}`);
+
+    // Send emails (SES or Local Mock logs)
+    const emailResponse = await sendEnquiryEmail(savedEnquiry);
+
+    res.status(201).json({
+      success: true,
+      message: 'Enquiry submitted successfully.',
+      data: savedEnquiry,
+      emailSent: emailResponse.success
+    });
+  } catch (error) {
+    console.error('Error handling enquiry submission:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'An internal server error occurred while processing your request: ' + error.message
+    });
+  }
 });
 
+// Legacy endpoint mapping to handle old code requests
+app.post('/send-quotation', upload.single('drawing'), async (req, res) => {
+  console.log('Legacy /send-quotation requested. Forwarding to /api/enquiries...');
+  // Express handles routing alias beautifully:
+  req.url = '/api/enquiries';
+  app.handle(req, res);
+});
+
+// ----------------------------------------------------
+// GDPR Export & Deletion Endpoints (Admin Authenticated)
+// ----------------------------------------------------
+
+// GET /api/enquiries/export?email=john@company.com
+app.get('/api/enquiries/export', adminAuth, async (req, res) => {
+  const { email } = req.query;
+
+  if (!email || !validateEmail(email)) {
+    return res.status(400).json({ error: 'Valid query parameter "email" is required.' });
+  }
+
+  try {
+    const query = 'SELECT * FROM enquiries WHERE email = $1 ORDER BY created_at DESC';
+    const result = await pool.query(query, [email]);
+
+    res.status(200).json({
+      success: true,
+      email: email,
+      count: result.rows.length,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('GDPR Export Error:', error.message);
+    res.status(500).json({ error: 'Internal server error during export operation.' });
+  }
+});
+
+// DELETE /api/enquiries/delete?email=john@company.com
+app.delete('/api/enquiries/delete', adminAuth, async (req, res) => {
+  const { email } = req.query;
+
+  if (!email || !validateEmail(email)) {
+    return res.status(400).json({ error: 'Valid query parameter "email" is required.' });
+  }
+
+  try {
+    // Delete database rows
+    const query = 'DELETE FROM enquiries WHERE email = $1 RETURNING *';
+    const result = await pool.query(query, [email]);
+
+    console.log(`GDPR Delete: Removed ${result.rowCount} records for ${email}`);
+
+    res.status(200).json({
+      success: true,
+      email: email,
+      deleted_count: result.rowCount,
+      message: `Successfully deleted all data records associated with ${email}`
+    });
+  } catch (error) {
+    console.error('GDPR Delete Error:', error.message);
+    res.status(500).json({ error: 'Internal server error during deletion operation.' });
+  }
+});
+
+// Start the Express server
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Failed to start server due to database initialization failure:', err.message);
+  process.exit(1);
 });
