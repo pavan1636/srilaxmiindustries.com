@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/api/health', async (req, res) => {
   try {
     // Check PostgreSQL connection
     await pool.query('SELECT 1');
