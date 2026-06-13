@@ -20,7 +20,7 @@ data "aws_ami" "ubuntu" {
 variable "ssh_key_name" {
   type        = string
   description = "Name of the AWS Key Pair to associate with the instance for SSH"
-  default     = "" # If empty, no keypair is attached. Set this to your key pair name on AWS.
+  default     = "srilaxmi-deployer" # Attached the key
 }
 
 # Provision the EC2 Virtual Server

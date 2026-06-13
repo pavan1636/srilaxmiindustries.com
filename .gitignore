@@ -14,3 +14,11 @@ backend/uploads/
 # OS metadata files
 .DS_Store
 Thumbs.db
+
+# Terraform state and plugin directories
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Private SSH keys
+*.pem

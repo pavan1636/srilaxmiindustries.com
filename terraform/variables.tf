@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "instance_type" {
   type        = string
   description = "EC2 instance size"
-  default     = "t2.micro" # AWS Free Tier eligible
+  default     = "t3.micro" # AWS Free Tier/Academy eligible
 }
 
 variable "trusted_ssh_ip" {

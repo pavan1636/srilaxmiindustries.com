@@ -50,6 +50,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups_lifecycle" {
     id     = "delete-old-backups"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = 30
     }
