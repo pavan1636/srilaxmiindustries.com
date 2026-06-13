@@ -1,0 +1,13 @@
+# Datadog Agent Configuration
+api_key: "${DD_API_KEY}"
+site: datadoghq.com
+
+# Enable application log collection
+logs_enabled: true
+
+# Enable Application Performance Monitoring (APM)
+apm_config:
+  enabled: true
+
+# Exclude monitoring logs of the Datadog container itself to save data
+container_exclude_logs: "name:srilaxmi-datadog"
