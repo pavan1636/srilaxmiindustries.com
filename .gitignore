@@ -25,3 +25,6 @@ Thumbs.db
 
 # Private SSH keys
 *.pem
+
+# Notes
+notes/
