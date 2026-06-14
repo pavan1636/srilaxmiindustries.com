@@ -279,8 +279,8 @@ Automated nightly backups via `scripts/backup.sh`:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/pavan1636/srilaxmiindustries.com.git
-cd srilaxmiindustries.com
+git clone https://github.com/pavan1636/srilaxmi-devops.git
+cd srilaxmi-devops
 
 # 2. Create environment file
 cp .env.example .env
