@@ -50,7 +50,7 @@ jobs:
             # Perform a deployment health check against the health endpoint
             echo "Waiting for the backend service to stabilize..."
             sleep 10
-            
+
             # Query /health and check if server responds with 200 OK
             if curl -s -f http://localhost:3000/health; then
               echo "Deployment health check passed! B2B platform is UP."

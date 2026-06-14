@@ -1,27 +1,88 @@
-# Deployment Process - Local vs Cloud
+# Deployment Process — Sri Laxmi Industries
+# Understanding where code builds and runs
 
-Understanding where code builds and runs is crucial. This note explains the deployment lifecycle.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOCAL DEVELOPMENT vs PRODUCTION — OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 💻 1. Local Development Loop (Docker Compose)
-* **Goal**: Code editing and fast testing.
-* **Environment**: Local machine with Docker Desktop.
-* **How it works**:
-  1. Developers write backend code and edit HTML/CSS files.
-  2. Running `docker compose up --build` launches isolated containers for the web proxy (Nginx), API, and PostgreSQL on their own computer.
-  3. The local database is isolated, and file uploads are saved locally in the `uploads/` directory inside the backend container.
+  LOCAL (Your Laptop)              PRODUCTION (AWS EC2)
+  ─────────────────                ───────────────────
+  docker compose up --build        GitHub Actions SSH deploy
+  localhost:80                     EC2 Public IP / Domain
+  Local PostgreSQL container       Local PostgreSQL container (same)
+  Uploads → local filesystem       Uploads → Private S3 Bucket
+  Emails → Console mock log        Emails → AWS SES (real delivery)
+  Monitoring → none                Monitoring → Datadog Cloud Dashboard
+  Backups → none                   Backups → Nightly pg_dump → S3
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOCAL DEVELOPMENT LOOP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal: Code editing and fast testing.
+  Environment: Local machine with Docker Desktop.
 
-## ☁️ 2. Production Environment (AWS Cloud)
-* **Goal**: Fast, secure, public access with backups and logging.
-* **Environment**: AWS cloud resources.
-* **How it works**:
-  1. **IaC Provisioning**: Terraform reads code scripts and provisions a virtual network (VPC), firewalls (Security Groups), S3 storage, and an EC2 server host automatically.
-  2. **CI/CD Pipeline**: 
-     - When you push to GitHub, a runner server starts a GitHub Actions workflow.
-     - The workflow SSHes securely into your EC2 host.
-     - The host pulls the latest code from GitHub and builds the new Docker containers in-place.
-  3. **Runtime Integrations**:
-     - Database persistence uses RDS (or containerized PostgreSQL on EC2).
-     - File uploads are streamed to a private **AWS S3 bucket**.
-     - Emails are dispatched using **AWS SES**.
+  Step 1: Edit backend code or HTML/CSS files
+  Step 2: docker compose up -d --build
+           → Builds fresh images from Dockerfiles
+           → Starts 4 containers (frontend, backend, db, datadog)
+           → Creates private bridge network
+  Step 3: Open http://localhost in browser
+  Step 4: Submit test enquiry → check docker compose logs backend
+  Step 5: If code changes needed → edit → docker compose restart backend
+
+  File uploads: Saved to local /uploads/ directory (S3 fallback)
+  Emails: Logged to console (SES credentials not configured locally)
+  Database: Isolated PostgreSQL container with named volume
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRODUCTION DEPLOYMENT LIFECYCLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal: Fast, secure, public access with backups and monitoring.
+
+  Phase 1 — IaC Provisioning (one-time):
+    cd terraform
+    terraform init      → Download AWS provider
+    terraform plan      → Preview 16 resources
+    terraform apply     → Provision VPC, EC2, S3, IAM, SG
+    → EC2 boots with Docker pre-installed (user data script)
+
+  Phase 2 — Initial Deployment (one-time):
+    ssh -i key.pem ubuntu@<EC2-IP>
+    git clone https://github.com/pavan1636/srilaxmiindustries.com.git
+    cd srilaxmiindustries.com
+    cp .env.example .env   → Edit with real credentials
+    docker compose up -d --build
+
+  Phase 3 — CI/CD (automated, every push):
+    Developer pushes to main branch
+    → GitHub Actions triggers deploy.yml
+    → SSH into EC2
+    → git pull, write .env from Secrets, docker compose up --build
+    → Health check /api/health
+    → Pass = live, Fail = print logs + exit 1
+
+  Phase 4 — Runtime (24/7):
+    Nightly: cron runs backup.sh → pg_dump → gzip → S3
+    Continuous: Datadog Agent streams metrics to cloud dashboard
+    Self-healing: restart: always on all containers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEPLOYMENT DIAGRAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Developer Laptop          GitHub             AWS EC2 (eu-west-1)
+  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐
+  │ git push     │───►│ Actions      │───►│ SSH + git pull       │
+  │ origin main  │    │ Workflow     │    │ docker compose up    │
+  └──────────────┘    │ (deploy.yml) │    │ Health check ✅       │
+                      └──────────────┘    └──────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INFRASTRUCTURE TEARDOWN (COST CONTROL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  After capturing screenshots and verifying deployment:
+    exit                     → Log out of EC2
+    cd terraform
+    terraform destroy        → Remove ALL 16 AWS resources
+    → Output: "Destroy complete! Resources: 16 destroyed."
+    → AWS bill stays at $0.00

@@ -1,42 +1,73 @@
-# Roadmap - Sri Laxmi Engineering Works Cloud Platform
+# SRI LAXMI INDUSTRIES — DevOps Learning Roadmap
 
-Welcome to your DevOps/Cloud Engineering learning journey! This roadmap outlines the steps we will take to turn a basic website into a production-grade full-stack cloud platform.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PURPOSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  This roadmap tracks the journey of turning a static website into
+  a production-grade B2B cloud platform with full DevOps tooling.
 
-## 🗺️ The Learning Pathway
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE LEARNING PATHWAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-```mermaid
-graph TD
-    A[Phase 1: Local Docker Compose & Full-Stack Core] --> B[Phase 2: Git & GitHub Repository Setup]
-    B --> C[Phase 3: AWS Infrastructure with Terraform IaC]
-    C --> D[Phase 4: GitHub Actions CI/CD Pipeline]
-    D --> E[Phase 5: Backup Automation & Security hardening]
-    E --> F[Phase 6: Datadog Monitoring Setup & Live Verification]
-```
+  Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6
+  Docker       Git         Terraform   CI/CD       Backups     Datadog
+  Full-Stack   GitHub      AWS IaC     Pipeline    Security    Monitoring
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1 — Full-Stack + Docker Containerization          [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Run the entire B2B platform locally in isolated containers
+  Stack:   Nginx (frontend), Express (API), PostgreSQL 15 (database)
+  Skills:  Dockerfile, Docker Compose, volumes, multi-stage builds,
+           Multer file uploads, AWS SDK for S3, connection pooling
 
-## 🛠️ Step-by-Step Overview
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2 — Git + GitHub Repository                       [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Version-control the project and host a DevOps portfolio repo
+  Skills:  git init, branching, remote origins, .gitignore, PATs,
+           SSH keys, commit conventions, push/pull workflows
 
-### Phase 1: Core Full-Stack & Containerization (Current Step)
-* **Goal**: Enable database persistence, handle technical drawings upload, and run everything locally in containerized isolation.
-* **Key Concepts**: Docker, Docker Compose, PostgreSQL Pools, Multer, AWS SDK.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 3 — Terraform + AWS Infrastructure                [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Provision cloud infrastructure automatically from code
+  Skills:  VPC, subnets, internet gateways, Security Groups, EC2,
+           S3 buckets, IAM roles/policies, terraform plan/apply/destroy
 
-### Phase 2: Git & GitHub Setup (Next Step)
-* **Goal**: Learn version control and create a clean repository to host your DevOps portfolio project.
-* **Key Concepts**: Git branches, remote origins, SSH keys, repository structures.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 4 — CI/CD Pipeline (GitHub Actions)               [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Push to GitHub → auto-deploy to EC2 in seconds
+  Skills:  GitHub Actions YAML, workflows/jobs/steps, runners,
+           SSH deploy, GitHub Secrets, container rolling updates
 
-### Phase 3: Infrastructure as Code (IaC) with Terraform
-* **Goal**: Build your AWS cloud infrastructure automatically from text scripts.
-* **Key Concepts**: VPC, Security Groups, EC2 provisioning, S3 bucket security, IAM Roles.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 5 — Backups + Security Hardening                  [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Automate nightly backups and implement GDPR compliance
+  Skills:  Cron jobs, Bash scripting, pg_dump to S3, non-root
+           containers, API key auth, GDPR export/delete endpoints
 
-### Phase 4: Automated Deployment (CI/CD)
-* **Goal**: Commit code to GitHub and see it automatically deploy to AWS in seconds.
-* **Key Concepts**: GitHub Actions, YAML syntax, runner agents, SSH deployment, container rolling updates.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 6 — Datadog Monitoring                            [✅ COMPLETE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Goal:    Track system health, aggregate logs, set up alerting
+  Skills:  Datadog Agent container, Docker metrics, log streaming,
+           EU site configuration (datadoghq.eu), dashboard setup
 
-### Phase 5: Automated Backups & Compliance
-* **Goal**: Create automated night-time data backups sent to the cloud.
-* **Key Concepts**: Cron jobs, Bash scripting, pg_dump database exports, GDPR controls.
-
-### Phase 6: Monitoring & Metrics
-* **Goal**: Track system health, check logs, and set up alert notifications when the site goes down.
-* **Key Concepts**: Datadog Agent, Docker system metrics, logging aggregates.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SKILLS FOR YOUR CV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Containers:      Docker, Docker Compose, multi-stage builds
+  IaC:             Terraform (AWS provider)
+  Cloud:           AWS EC2, S3, SES, VPC, IAM, Security Groups
+  CI/CD:           GitHub Actions (SSH deploy to EC2)
+  Monitoring:      Datadog Agent, dashboards, log aggregation
+  Databases:       PostgreSQL 15, pg_dump backups, connection pooling
+  Web Servers:     Nginx reverse proxy, static file serving
+  Backend:         Node.js, Express, REST APIs
+  Security:        Non-root containers, GDPR compliance, API key auth
+  Scripting:       Bash, cron automation
+  Version Control: Git, GitHub, branching strategies

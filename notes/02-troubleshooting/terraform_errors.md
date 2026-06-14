@@ -1,42 +1,84 @@
-# Troubleshooting - Terraform Errors
+# TROUBLESHOOTING — Terraform Errors
+# Sri Laxmi Industries — Common Terraform issues and fixes
 
-Use this guide if you encounter errors running Terraform infrastructure scripts.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR 1: Invalid provider configuration
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Symptom:
+    Error: No valid credential sources found for AWS Provider.
 
----
+  Why it happens:
+    Terraform cannot find valid AWS credentials. Either aws configure
+    was not run, or the credentials are expired/incorrect.
 
-## 🚫 Error 1: `NoCredentialProviders: no valid providers in chain`
-* **Symptom**: Terraform fail to authenticate with AWS.
-* **Why it happens**: Terraform is trying to provision resources on your AWS account, but you have not logged in or configured your AWS credentials.
-* **How to fix it**:
-  1. Set your AWS credentials in your terminal session environment:
-     - **Windows PowerShell**:
-       ```powershell
-       $env:AWS_ACCESS_KEY_ID="your-access-key"
-       $env:AWS_SECRET_ACCESS_KEY="your-secret-key"
-       ```
-     - **Bash/macOS/Linux**:
-       ```bash
-       export AWS_ACCESS_KEY_ID="your-access-key"
-       export AWS_SECRET_ACCESS_KEY="your-secret-key"
-       ```
-  2. Verify credentials using `aws sts get-caller-identity`.
+  How to fix:
+    1. Run aws configure and enter valid Access Key + Secret Key
+    2. Verify credentials: aws sts get-caller-identity
+    3. Check the region matches what's in providers.tf
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR 2: S3 bucket name conflict
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Symptom:
+    Error: Error creating S3 bucket: BucketAlreadyExists
 
-## 🚫 Error 2: `Error: Duplicate resource`
-* **Symptom**: Terraform fails saying a resource (like an S3 bucket or Security Group) already exists in AWS.
-* **Why it happens**: 
-  - Another user/project has already taken that exact global S3 bucket name (S3 bucket names must be globally unique across all of AWS).
-  - Or, you ran Terraform before, manually deleted some files, and the state became desynchronized.
-* **How to fix it**:
-  1. Open `terraform/variables.tf` and change the S3 bucket names (e.g. add random letters or your initials: `srilaxmi-uploads-pavan`).
-  2. Run `terraform plan` to verify.
+  Why it happens:
+    S3 bucket names must be GLOBALLY unique across all AWS accounts worldwide.
+    Someone else has already claimed that bucket name.
 
----
+  How to fix:
+    Update the bucket name in terraform/variables.tf:
+    default = "srilaxmi-enquiry-uploads-pavan"  → add a unique suffix
 
-## 🚫 Error 3: `Error: Instantiating provider` or Plugin download failures
-* **Symptom**: `terraform init` crashes.
-* **Why it happens**: Network timeouts or blocked connections during plugin downloads.
-* **How to fix it**:
-  1. Check your internet connection.
-  2. Run `terraform init -upgrade` to retry provider downloads.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR 3: Resource already exists
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Symptom:
+    Error: Creating VPC: VpcLimitExceeded / Error: already exists
+
+  Why it happens:
+    State file was deleted or corrupted, but resources still exist in AWS.
+    Terraform does not know about them and tries to create duplicates.
+
+  How to fix:
+    Option A: Import existing resources:
+      terraform import aws_vpc.main vpc-0abcdef1234567890
+    Option B: Destroy manually in AWS Console, then re-apply
+    Option C: terraform state rm <resource> to remove orphan references
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR 4: Instance type restriction (AWS Academy)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Symptom:
+    Error launching source instance: VcpuLimitExceeded or
+    The specified instance type is not supported in this region
+
+  Why it happens:
+    AWS Academy / Sandbox accounts restrict available instance types.
+    t2.micro may not be allowed — only t3.micro is permitted.
+
+  How to fix:
+    Update terraform/variables.tf:
+      default = "t3.micro"   # was "t2.micro"
+    Then re-run:
+      terraform plan
+      terraform apply
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR 5: S3 lifecycle rule filter warning
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Symptom:
+    Warning: Argument is deprecated: Use filter instead
+
+  Why it happens:
+    The AWS provider deprecated the old lifecycle_rule format.
+    The new format requires an explicit filter {} block.
+
+  How to fix:
+    In terraform/s3.tf, add an empty filter block:
+      rule {
+        id      = "expire-old-backups"
+        enabled = true
+        filter {}     ← ADD THIS LINE
+        expiration { days = 90 }
+      }

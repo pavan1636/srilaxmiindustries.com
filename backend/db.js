@@ -1,13 +1,13 @@
-const { Pool } = require('pg');
+const { Pool } = require("pg");
 
 const poolConfig = process.env.DATABASE_URL
   ? { connectionString: process.env.DATABASE_URL }
   : {
-      user: process.env.DB_USER || 'postgres',
-      host: process.env.DB_HOST || 'db',
-      database: process.env.DB_DATABASE || 'srilaxmi',
-      password: process.env.DB_PASSWORD || 'postgres',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
+      user: process.env.DB_USER || "postgres",
+      host: process.env.DB_HOST || "db",
+      database: process.env.DB_DATABASE || "srilaxmi",
+      password: process.env.DB_PASSWORD || "postgres",
+      port: parseInt(process.env.DB_PORT || "5432", 10),
     };
 
 const pool = new Pool(poolConfig);
@@ -33,12 +33,15 @@ async function initDb() {
     await pool.query(queryText);
     console.log('PostgreSQL: "enquiries" table initialized successfully.');
   } catch (error) {
-    console.error('PostgreSQL: Error initializing "enquiries" table:', error.message);
+    console.error(
+      'PostgreSQL: Error initializing "enquiries" table:',
+      error.message,
+    );
     throw error;
   }
 }
 
 module.exports = {
   pool,
-  initDb
+  initDb,
 };

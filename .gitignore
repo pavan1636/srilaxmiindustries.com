@@ -11,6 +11,9 @@ web_build/
 # Local file upload fallbacks
 backend/uploads/
 
+# Local database backup files
+backups/
+
 # OS metadata files
 .DS_Store
 Thumbs.db
