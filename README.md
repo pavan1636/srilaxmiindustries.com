@@ -90,6 +90,50 @@ The production deployment runs entirely on AWS in the `eu-west-1` (Ireland) regi
 
 ---
 
+## Deployment Proof
+
+Visual confirmation of the production deployment lifecycle:
+
+<details>
+<summary><b>1. Containerization (Docker)</b></summary>
+<br>
+All 4 services (frontend, backend, db, datadog) running healthily inside Docker Compose.
+<br><br>
+<img src="./assets/docker-containers.png" alt="Docker containers running" width="800">
+</details>
+
+<details>
+<summary><b>2. Live Website on AWS EC2</b></summary>
+<br>
+The frontend successfully served by Nginx on the public EC2 IP address.
+<br><br>
+<img src="./assets/live-website.png" alt="Live website on AWS" width="800">
+</details>
+
+<details>
+<summary><b>3. API Health Check</b></summary>
+<br>
+The Express.js backend successfully connecting to the PostgreSQL database.
+<br><br>
+<img src="./assets/api-health.png" alt="API Health check" width="800">
+</details>
+
+<details>
+<summary><b>4. Email Notifications (AWS SES)</b></summary>
+<br>
+Automated B2B enquiry confirmation emails delivered successfully via Amazon SES.
+<br><br>
+<img src="./assets/email-success.png" alt="AWS SES Email Success" width="800">
+</details>
+
+<details>
+<summary><b>5. Observability (Datadog)</b></summary>
+<br>
+Live container metrics (CPU, Memory, Network) streaming to the Datadog Cloud dashboard.
+<br><br>
+<img src="./assets/datadog-monitoring.png" alt="Datadog Dashboard" width="800">
+</details>
+
 ## Terraform File Layout
 
 All AWS infrastructure is defined as code — reproducible and version-controlled:
