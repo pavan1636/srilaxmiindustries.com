@@ -90,49 +90,42 @@ The production deployment runs entirely on AWS in the `eu-west-1` (Ireland) regi
 
 ---
 
-## Deployment Proof
+## 📸 Deployment Proof
 
-Visual confirmation of the production deployment lifecycle:
+> Real screenshots from the live production deployment on AWS — not a local demo.
 
-<details>
-<summary><b>1. Containerization (Docker)</b></summary>
-<br>
-All 4 services (frontend, backend, db, datadog) running healthily inside Docker Compose.
-<br><br>
-<img src="./assets/docker-containers.png" alt="Docker containers running" width="800">
-</details>
+### 1. Docker Containers Running on AWS EC2
+All 4 services (frontend, backend, db, datadog) running healthily via Docker Compose on Ubuntu EC2.
 
-<details>
-<summary><b>2. Live Website on AWS EC2</b></summary>
-<br>
-The frontend successfully served by Nginx on the public EC2 IP address.
-<br><br>
-<img src="./assets/live-website.png" alt="Live website on AWS" width="800">
-</details>
+![Docker containers running on EC2](./assets/docker-containers.png)
 
-<details>
-<summary><b>3. API Health Check</b></summary>
-<br>
-The Express.js backend successfully connecting to the PostgreSQL database.
-<br><br>
-<img src="./assets/api-health.png" alt="API Health check" width="800">
-</details>
+---
 
-<details>
-<summary><b>4. Email Notifications (AWS SES)</b></summary>
-<br>
-Automated B2B enquiry confirmation emails delivered successfully via Amazon SES.
-<br><br>
-<img src="./assets/email-success.png" alt="AWS SES Email Success" width="800">
-</details>
+### 2. Live Website — Public AWS EC2 IP
+The B2B manufacturing platform live and accessible on the public EC2 IP address (`18.202.232.165`).
 
-<details>
-<summary><b>5. Observability (Datadog)</b></summary>
-<br>
-Live container metrics (CPU, Memory, Network) streaming to the Datadog Cloud dashboard.
-<br><br>
-<img src="./assets/datadog-monitoring.png" alt="Datadog Dashboard" width="800">
-</details>
+![Live website on AWS](./assets/live-website.png)
+
+---
+
+### 3. Datadog Live Monitoring Dashboard
+Real-time container CPU, memory, and network metrics streaming from EC2 to the Datadog cloud dashboard.
+
+![Datadog monitoring dashboard](./assets/datadog-monitoring.png)
+
+---
+
+### 4. API Health Check — Database Connected
+The `/api/health` endpoint confirming the Express.js backend is connected to PostgreSQL.
+
+![API health check response](./assets/api-health.png)
+
+---
+
+### 5. AWS SES Email — Enquiry Notification Delivered
+Automated B2B enquiry email successfully sent and delivered via Amazon SES.
+
+![AWS SES email success](./assets/email-success.png)
 
 ## Terraform File Layout
 
